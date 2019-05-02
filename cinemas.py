@@ -35,11 +35,12 @@ def find_kinopoisk_movie_url(movie_title):
 
 
 def fetch_movie_info(movie_url, proxy):
+    NOBREAK_SPACE = '\xa0'
     raw_html = fetch_page(KINOPOISK + film_url, proxy=proxy)
     kp_soup = BeautifulSoup(raw_html, 'lxml')
     return (
         kp_soup.find('span', {'class': 'rating_ball'}).text,
-        kp_soup.find('span', {'class': 'ratingCount'}).text.replace('\xa0', '')
+        kp_soup.find('span', {'class': 'ratingCount'}).text.replace(NOBREAK_SPACE, '')
     )
 
 
