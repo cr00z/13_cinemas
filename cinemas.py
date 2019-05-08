@@ -2,22 +2,23 @@ import requests
 from bs4 import BeautifulSoup
 import re
 from fake_useragent import UserAgent
+import argparse
 
 
 AFISHA = 'https://www.afisha.ru/msk/schedule_cinema/'
 KINOPOISK = 'https://www.kinopoisk.ru/'
 KINOPOISK_SEARCH = KINOPOISK + 'index.php?kp_query='
 FREEPROXY_API = 'http://www.freeproxy-list.ru/api/proxy?anonymity=false&token=demo'
-DEBUG = True
+VERBOSE = False
 
 
 class ProxyPool:
-    __current = -1;
+    __current = -1
     __pool = []
     
     def __init__(self):
         self.__pool = fetch_page(FREEPROXY_API).decode('utf-8').split('\n')
-        if DEBUG:
+        if VERBOSE:
             print('ProxyPool:', *self.__pool, sep='\n')
 
     def next(self):
@@ -35,7 +36,7 @@ class ProxyPool:
 
 
 def print_debug_info(debug_info):
-    if DEBUG:
+    if VERBOSE:
         print(debug_info)
 
 
@@ -96,12 +97,23 @@ def get_kinopoisk_info_callback(callback_func, url, proxies_pool):
         print_debug_info('Remove: {}'.format(proxies_pool.remove()))
 
 
-def output_movies_to_console(movies):
-    for movie in movies:
+def output_movies_to_console(movies, limit):
+    for movie in movies[:limit]:
         print(*movie)
 
 
+def get_cmdline_args():
+    parser = argparse.ArgumentParser(
+        description='Simple console script to select a movie'
+    )
+    parser.add_argument('--limit', type=int, default=10, help='num of films')
+    parser.add_argument('-v', '--verbose', action='store_true', help='verbose')
+    return parser.parse_args()
+
+
 if __name__ == '__main__':
+    args = get_cmdline_args()
+    VERBOSE = args.verbose or False
     proxies_pool = ProxyPool()
     movies = []
     for movie_title in parse_afisha_list(fetch_page(AFISHA)):
@@ -120,4 +132,4 @@ if __name__ == '__main__':
         print_debug_info(movie_rating)
         movies.append((movie_title, movie_rating[0], movie_rating[1]))
     movies.sort(key=lambda i: i[1], reverse=True)
-    output_movies_to_console(movies)
+    output_movies_to_console(movies, args.limit)
