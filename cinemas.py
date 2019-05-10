@@ -65,10 +65,29 @@ def parse_afisha_list(raw_html):
         yield film_meta['content']
 
 
+def get_soup(raw_html):
+    try:
+        return BeautifulSoup(raw_html, 'lxml')
+    except TypeError:
+        return None
+
+
+def find_info_in_soup(soup, tag, param, next_sibling = False):
+    try:
+        info = soup.find(tag, param)
+        if next_sibling:
+            info = info.next_sibling
+        return info.text
+    except AttributeError:
+        return None
+
+
 def find_kinopoisk_movie_url(movie_title, proxy):
     raw_html = fetch_page(KINOPOISK_SEARCH + movie_title, proxy)
+    kp_soup = get_soup(raw_html)
+    if kp_soup is None:
+        return None
     try:
-        kp_soup = BeautifulSoup(raw_html, 'lxml')
         data_url = kp_soup.find('a', {'class': 'js-serp-metrika'})['data-url']
         return re.search(r'film/\d*', data_url)[0]
     except (TypeError, AttributeError):
@@ -78,21 +97,20 @@ def find_kinopoisk_movie_url(movie_title, proxy):
 def find_kinopoisk_movie_info(movie_url, proxy):
     nbsp_char = '\xa0'
     raw_html = fetch_page(KINOPOISK + movie_url, proxy)
-    try:
-        kp_soup = BeautifulSoup(raw_html, 'lxml')
-    except TypeError:
+    kp_soup = get_soup(raw_html)
+    if kp_soup is None:
         return None
-    try:
-        movie_rating_str = kp_soup.find('span', {'class': 'rating_ball'}).text
-        movie_votes_str = kp_soup.find('span', {'class': 'ratingCount'}).text
-    except AttributeError:
-        try:
-            movie_rating_str = '0'
-            movie_votes_str = kp_soup.find(
+    movie_votes_str = find_info_in_soup(kp_soup, 'span', {'class': 'ratingCount'})
+    movie_rating_str = find_info_in_soup(kp_soup, 'span', {'class': 'rating_ball'})
+    if not movie_rating_str:
+        movie_votes_str = find_info_in_soup(
+                kp_soup,
                 'span',
-                title='Рейтинг скрыт (недостаточно оценок)'
-            ).next_sibling.text
-        except AttributeError:
+                {'title': 'Рейтинг скрыт (недостаточно оценок)'},
+                next_sibling=True
+        )
+        movie_rating_str = '0'
+        if not movie_votes_str:
             return None
     return (
         float(movie_rating_str),
