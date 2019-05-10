@@ -72,12 +72,12 @@ def get_soup(raw_html):
         return None
 
 
-def find_info_in_soup(soup, tag, param, next_sibling = False):
+def find_info_in_soup(soup, tag, tag_param, next_sibling=False):
     try:
-        info = soup.find(tag, param)
+        soup_tag = soup.find(tag, tag_param)
         if next_sibling:
-            info = info.next_sibling
-        return info.text
+            soup_tag = soup_tag.next_sibling
+        return soup_tag.text
     except AttributeError:
         return None
 
