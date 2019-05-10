@@ -71,18 +71,28 @@ def find_kinopoisk_movie_url(movie_title, proxy):
 
 
 def find_kinopoisk_movie_info(movie_url, proxy):
-    nobreak_space = '\xa0'
+    nbsp_char = '\xa0'
     raw_html = fetch_page(KINOPOISK + movie_url, proxy)
     try:
         kp_soup = BeautifulSoup(raw_html, 'lxml')
+    except TypeError:
+        return None
+    try:
         movie_rating_str = kp_soup.find('span', {'class': 'rating_ball'}).text
         movie_votes_str = kp_soup.find('span', {'class': 'ratingCount'}).text
-        return (
-            float(movie_rating_str),
-            int(movie_votes_str.replace(nobreak_space, ''))
-        )
-    except (TypeError, AttributeError):
-        return None
+    except AttributeError:
+        try:
+            movie_rating_str = '0'
+            movie_votes_str = kp_soup.find(
+                'span',
+                title='Рейтинг скрыт (недостаточно оценок)'
+            ).next_sibling.text
+        except AttributeError:
+            return None
+    return (
+        float(movie_rating_str),
+        int(movie_votes_str.replace(nbsp_char, ''))
+    )
 
 
 def get_kinopoisk_info_callback(callback_func, url, proxies_pool):
