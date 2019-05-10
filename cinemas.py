@@ -21,7 +21,7 @@ class ProxyPool:
         if VERBOSE:
             print('ProxyPool:', *self.__pool, sep='\n')
 
-    def next(self):
+    def get_next(self):
         if len(self.__pool) <= 0:
             return None
         self.__current += 1
@@ -29,7 +29,7 @@ class ProxyPool:
             self.__current = 0
         return self.__pool[self.__current]
     
-    def remove(self):
+    def remove_current(self):
         if self.__current >= len(self.__pool):
             return None
         return self.__pool.pop(self.__current)
@@ -97,14 +97,14 @@ def find_kinopoisk_movie_info(movie_url, proxy):
 
 def get_kinopoisk_info_callback(callback_func, url, proxies_pool):
     while True:
-        proxy = proxies_pool.next()
+        proxy = proxies_pool.get_next()
         if not proxy:
             return None
         print_debug_info('Check: {}'.format(proxy))
         return_value = callback_func(url, proxy)
         if return_value:
             return return_value
-        print_debug_info('Remove: {}'.format(proxies_pool.remove()))
+        print_debug_info('Remove: {}'.format(proxies_pool.remove_current()))
 
 
 def output_movies_to_console(movies, limit):
