@@ -6,7 +6,7 @@ The script outputs most popular movies sorted by rating.
 
 It receives a list of new movies from [Afisha](https://www.afisha.ru/msk/schedule_cinema/) and gets a rating and a number of votes for each film from [Kinopoisk](https://www.kinopoisk.ru/).
 
-You can use *--limit* key to output a certain amount of movies and *--verbose* key to get more info.
+You can use *--limit* key to output a certain amount of movies (default 10) and *--verbose* key to get more info.
 
 # How to Install
 
