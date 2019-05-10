@@ -8,7 +8,8 @@ import argparse
 AFISHA = 'https://www.afisha.ru/msk/schedule_cinema/'
 KINOPOISK = 'https://www.kinopoisk.ru/'
 KINOPOISK_SEARCH = KINOPOISK + 'index.php?kp_query='
-FREEPROXY_API = 'http://www.freeproxy-list.ru/api/proxy?anonymity=false&token=demo'
+FREEPROXY_API_URL = 'http://www.freeproxy-list.ru/api/proxy'
+FREEPROXY_API_PARAMS = {'anonymity': 'false', 'token': 'demo'}
 VERBOSE = False
 
 
@@ -17,7 +18,10 @@ class ProxyPool:
     __pool = []
     
     def __init__(self):
-        self.__pool = fetch_page(FREEPROXY_API).decode('utf-8').split('\n')
+        self.__pool = fetch_page(
+            FREEPROXY_API_URL,
+            FREEPROXY_API_PARAMS
+        ).decode('utf-8').split('\n')
         if VERBOSE:
             print('ProxyPool:', *self.__pool, sep='\n')
 
@@ -40,11 +44,12 @@ def print_debug_info(debug_info):
         print(debug_info)
 
 
-def fetch_page(url, proxy=None):
+def fetch_page(url, params=None, proxy=None):
     proxy_timeout = 10
     try:
         return requests.get(
             url,
+            params=params,
             headers={'User-agent': str(UserAgent().random)},
             proxies={'https': 'https://' + proxy} if proxy else None,
             timeout=proxy_timeout
