@@ -131,7 +131,7 @@ def get_kinopoisk_info(movie_title, proxies_pool, script_log):
         script_log
     ) or (0, 0)
     script_log.debug(movie_rating)
-    return (movie_title, movie_rating[0], movie_rating[1])
+    return movie_title, movie_rating[0], movie_rating[1]
 
 
 def output_movies_to_console(movies, limit):
