@@ -7,7 +7,7 @@ import argparse
 
 AFISHA = 'https://www.afisha.ru/msk/schedule_cinema/'
 KINOPOISK = 'https://www.kinopoisk.ru/'
-KINOPOISK_SEARCH = KINOPOISK + 'index.php?kp_query='
+KINOPOISK_SEARCH = '{}index.php'.format(KINOPOISK)
 FREEPROXY_API_URL = 'http://www.freeproxy-list.ru/api/proxy'
 FREEPROXY_API_PARAMS = {'anonymity': 'false', 'token': 'demo'}
 VERBOSE = False
@@ -51,7 +51,7 @@ def fetch_page(url, params=None, proxy=None):
             url,
             params=params,
             headers={'User-agent': str(UserAgent().random)},
-            proxies={'https': 'https://' + proxy} if proxy else None,
+            proxies={'https': 'https://{}'.format(proxy)} if proxy else None,
             timeout=proxy_timeout
         ).content
     except requests.exceptions.RequestException:
@@ -83,20 +83,24 @@ def find_info_in_soup(soup, tag, tag_param, next_sibling=False):
 
 
 def find_kinopoisk_movie_url(movie_title, proxy):
-    raw_html = fetch_page(KINOPOISK_SEARCH + movie_title, proxy)
+    raw_html = fetch_page(
+        KINOPOISK_SEARCH,
+        params={'kp_query': movie_title},
+        proxy=proxy
+    )
     kp_soup = get_soup(raw_html)
     if kp_soup is None:
         return None
     try:
         data_url = kp_soup.find('a', {'class': 'js-serp-metrika'})['data-url']
         return re.search(r'film/\d*', data_url)[0]
-    except (TypeError, AttributeError):
+    except AttributeError:
         return None
 
 
 def find_kinopoisk_movie_info(movie_url, proxy):
     nbsp_char = '\xa0'
-    raw_html = fetch_page(KINOPOISK + movie_url, proxy)
+    raw_html = fetch_page('{}{}'.format(KINOPOISK, movie_url), proxy=proxy)
     kp_soup = get_soup(raw_html)
     if kp_soup is None:
         return None
