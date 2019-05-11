@@ -3,6 +3,7 @@ from bs4 import BeautifulSoup
 import re
 from fake_useragent import UserAgent
 import argparse
+import logging
 
 
 AFISHA = 'https://www.afisha.ru/msk/schedule_cinema/'
@@ -10,20 +11,20 @@ KINOPOISK = 'https://www.kinopoisk.ru/'
 KINOPOISK_SEARCH = '{}index.php'.format(KINOPOISK)
 FREEPROXY_API_URL = 'http://www.freeproxy-list.ru/api/proxy'
 FREEPROXY_API_PARAMS = {'anonymity': 'false', 'token': 'demo'}
-VERBOSE = False
 
 
 class ProxyPool:
     __current = -1
     __pool = []
+    __script_log = None
     
-    def __init__(self):
+    def __init__(self, script_log):
         self.__pool = fetch_page(
             FREEPROXY_API_URL,
             FREEPROXY_API_PARAMS
         ).decode('utf-8').split('\n')
-        if VERBOSE:
-            print('ProxyPool:', *self.__pool, sep='\n')
+        self.__script_log = script_log
+        self.__script_log.debug('ProxyPool:{}'.format(*self.__pool))
 
     def get_next(self):
         if len(self.__pool) <= 0:
@@ -39,9 +40,9 @@ class ProxyPool:
         return self.__pool.pop(self.__current)
 
 
-def print_debug_info(debug_info):
-    if VERBOSE:
-        print(debug_info)
+def get_logger(logfile_name):
+    logging.basicConfig(filename=logfile_name, level=logging.DEBUG)
+    return logging.getLogger('cinemas')
 
 
 def fetch_page(url, params=None, proxy=None):
@@ -122,16 +123,16 @@ def find_kinopoisk_movie_info(movie_url, proxy):
     )
 
 
-def get_kinopoisk_info_callback(callback_func, url, proxies_pool):
+def get_kinopoisk_info_callback(callback_func, url, proxies_pool, script_log):
     while True:
         proxy = proxies_pool.get_next()
         if not proxy:
             return None
-        print_debug_info('Check: {}'.format(proxy))
+        script_log.debug('Check: {}'.format(proxy))
         return_value = callback_func(url, proxy)
         if return_value:
             return return_value
-        print_debug_info('Remove: {}'.format(proxies_pool.remove_current()))
+        script_log.debug('Remove: {}'.format(proxies_pool.remove_current()))
 
 
 def output_movies_to_console(movies, limit):
@@ -144,29 +145,30 @@ def get_cmdline_args():
         description='Simple console script to select a movie'
     )
     parser.add_argument('--limit', type=int, default=10, help='num of films')
-    parser.add_argument('-v', '--verbose', action='store_true', help='verbose')
     return parser.parse_args()
 
 
 if __name__ == '__main__':
     args = get_cmdline_args()
-    VERBOSE = args.verbose or False
-    proxies_pool = ProxyPool()
+    script_log = get_logger('cinemas.log')
+    proxies_pool = ProxyPool(script_log)
     movies = []
     for movie_title in parse_afisha_list(fetch_page(AFISHA)):
-        print_debug_info(movie_title)
+        script_log.debug(movie_title)
         movie_url = get_kinopoisk_info_callback(
             find_kinopoisk_movie_url,
             movie_title,
-            proxies_pool
+            proxies_pool,
+            script_log
         )
-        print_debug_info(movie_url)
+        script_log.debug(movie_url)
         movie_rating = get_kinopoisk_info_callback(
             find_kinopoisk_movie_info,
             movie_url,
-            proxies_pool
+            proxies_pool,
+            script_log
         ) or (0, 0)
-        print_debug_info(movie_rating)
+        script_log.debug(movie_rating)
         movies.append((movie_title, movie_rating[0], movie_rating[1]))
     movies.sort(key=lambda i: i[1], reverse=True)
     output_movies_to_console(movies, args.limit)
